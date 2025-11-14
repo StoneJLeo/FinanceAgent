@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>期货超级智能体 · 极简版</title>
+<style>
+:root{--bg:#0b0f1a;--card:#121826;--text:#e7edf7;--muted:#8aa0b5;--accent:#4cc9f0;--warn:#ffb703;--buy:#13d38e;--sell:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{font-weight:700;letter-spacing:.5px}
+.badge{padding:2px 8px;border-radius:12px;background:#1b2333;color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+.card{background:var(--card);border:1px solid #1f2636;border-radius:12px;padding:16px}
+.card h3{margin:0 0 12px 0;font-size:16px}
+.form-row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:12px}
+.input{display:flex;flex-direction:column;gap:6px}
+.input label{font-size:12px;color:var(--muted)}
+.input input,.input select,.input button,.pill{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263148;background:#0f1524;color:var(--text)}
+.actions{display:flex;gap:8px}
+.primary{background:var(--accent);border-color:var(--accent);color:#032b35;font-weight:600}
+.secondary{background:#0f1524;border-color:#33415c;color:var(--text)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.kv .item{background:#10182a;border:1px dashed #2a3550;border-radius:10px;padding:10px}
+.tag{font-size:11px;border:1px solid #2c3755;padding:2px 6px;border-radius:8px;color:var(--muted)}
+.tag.ai{border-color:#3a6ea5;color:#77b1ff}
+.tag.data{border-color:#4a7859;color:#79d7a1}
+.tag.calc{border-color:#a76f3b;color:#ffce89}
+.signal{font-size:28px;font-weight:800}
+.signal.buy{color:var(--buy)}.signal.sell{color:var(--sell)}.signal.hold{color:var(--muted)}
+table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #233050;font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+.footer{margin-top:16px;color:var(--muted);font-size:12px}
+hr{border:none;border-top:1px solid #223046;margin:12px 0}
+button:disabled{opacity:.6}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="brand">期货超级智能体 · 极简版</div>
+    <div class="badge">预览原型</div>
+  </div>
+
+  <div class="card">
+    <h3>分析面板</h3>
+    <div class="form-row">
+      <div class="input"><label>合约代码</label><input id="symbol" placeholder="rb2505" value="rb2505"></div>
+      <div class="input"><label>周期</label>
+        <select id="timeframe">
+          <option value="1m">1分钟</option>
+          <option value="5m" selected>5分钟</option>
+          <option value="15m">15分钟</option>
+        </select>
+      </div>
+      <div class="input"><label>资金(元)</label><input id="capital" type="number" placeholder="100000" value="100000"></div>
+      <div class="input"><label>风险偏好</label>
+        <select id="risk">
+          <option value="conservative">保守</option>
+          <option value="neutral" selected>中性</option>
+          <option value="aggressive">激进</option>
+        </select>
+      </div>
+      <div class="input"><label>自动刷新行情</label>
+        <select id="autorefresh">
+          <option value="off">关闭</option>
+          <option value="on" selected>开启</option>
+        </select>
+      </div>
+      <div class="input actions">
+        <button id="btn-run" class="primary">开始分析</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="tag data">数据: 行情/新闻</span>
+      <span class="tag.calc">计算: 指标/回测</span>
+      <span class="tag.ai">AI: 情绪/预测/报告</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h3>概览</h3>
+        <div class="kv">
+          <div class="item"><div class="small">当前价格</div><div id="price" style="font-size:22px">—</div></div>
+          <div class="item"><div class="small">更新时间</div><div id="lastUpdate">—</div></div>
+          <div class="item"><div class="small">成交量</div><div id="volume">—</div></div>
+          <div class="item"><div class="small">持仓量</div><div id="oi">—</div></div>
+        </div>
+        <hr>
+        <div class="row">
+          <button id="btn-news" class="secondary">查看新闻</button>
+          <button id="btn-ind" class="secondary">查看技术指标</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>综合决策</h3>
+        <div id="signal" class="signal hold">观望</div>
+        <div class="kv" style="margin-top:10px">
+          <div class="item"><div class="small">建议仓位</div><div id="position">—</div></div>
+          <div class="item"><div class="small">止损/止盈</div><div id="stops">—</div></div>
+          <div class="item"><div class="small">融合分数</div><div id="fusion">—</div></div>
+          <div class="item"><div class="small">手续费估算</div><div id="fee">—</div></div>
+        </div>
+        <hr>
+        <div class="row">
+          <span class="tag.ai">AI: 决策融合</span>
+          <span class="tag.calc">计算: 仓位与风险</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>模型预测</h3>
+        <table>
+          <thead><tr><th>未来K线</th><th>上涨概率</th><th>下跌概率</th></tr></thead>
+          <tbody id="predTable">
+            <tr><td>1</td><td>—</td><td>—</td></tr>
+            <tr><td>2</td><td>—</td><td>—</td></tr>
+            <tr><td>3</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+        <div class="row" style="margin-top:8px">
+          <span class="tag.ai">AI: LSTM预测</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>新闻情绪</h3>
+        <div class="kv">
+          <div class="item"><div class="small">情绪得分</div><div id="newsScore" style="font-size:22px">—</div></div>
+          <div class="item"><div class="small">倾向</div><div id="newsBias">—</div></div>
+        </div>
+        <hr>
+        <div class="row">
+          <span class="tag.data">数据: 新闻爬取</span>
+          <span class="tag.ai">AI: 情绪分类</span>
+        </div>
+        <table style="margin-top:8px">
+          <thead><tr><th>时间</th><th>来源</th><th>标题</th></tr></thead>
+          <tbody id="newsList">
+            <tr><td>—</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>技术指标</h3>
+        <table>
+          <thead><tr><th>指标</th><th>值</th><th>信号</th></tr></thead>
+          <tbody id="indicators">
+            <tr><td>MA5</td><td>—</td><td>—</td></tr>
+            <tr><td>MA10</td><td>—</td><td>—</td></tr>
+            <tr><td>RSI</td><td>—</td><td>—</td></tr>
+            <tr><td>MACD</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+        <div class="row" style="margin-top:8px">
+          <span class="tag.calc">计算: TA-Lib</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>执行日志</h3>
+        <div id="log" class="pill" style="height:140px;overflow:auto"></div>
+        <div class="row" style="margin-top:8px">
+          <button id="btn-stream" class="secondary">开启流式分析</button>
+          <button id="btn-stop" class="secondary">停止刷新</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    ⚠️ 风险提示：短线策略准确率有限，务必严格止损；实盘前至少回测2年、夏普>1.5。
+  </div>
+</div>
+
+<script>
+const api = {
+  analyze: '/api/analyze',
+  market: '/api/market',
+  news: '/api/news',
+  indicators: '/api/indicators',
+  stream: (id) => '/stream/' + id
+}
+let marketTimer = null
+let streamRef = null
+let lastThreadId = null
+
+function v(id){return document.getElementById(id)}
+function setText(id, val){v(id).textContent = val}
+function addLog(line){
+  const el = v('log')
+  const at = new Date().toLocaleTimeString()
+  el.textContent += '['+at+'] ' + line + '\n'
+  el.scrollTop = el.scrollHeight
+}
+function biasText(score){
+  if(score === '—') return '—'
+  const n = Number(score)
+  if(isNaN(n)) return '—'
+  if(n >= 60) return '偏多'
+  if(n <= 40) return '偏空'
+  return '中性'
+}
+function updateSignal(score){
+  const el = v('signal')
+  el.classList.remove('buy','sell','hold')
+  if(score > 0.6){el.textContent='买入'; el.classList.add('buy')}
+  else if(score < -0.6){el.textContent='卖出'; el.classList.add('sell')}
+  else {el.textContent='观望'; el.classList.add('hold')}
+}
+function stopAll(){
+  if(marketTimer){clearInterval(marketTimer); marketTimer=null}
+  if(streamRef){streamRef.close(); streamRef=null}
+  addLog('已停止自动刷新与流式分析')
+}
+
+async function runAnalysis(){
+  stopAll()
+  const payload = {
+    symbol: v('symbol').value.trim(),
+    timeframe: v('timeframe').value,
+    capital: Number(v('capital').value||0),
+    risk: v('risk').value
+  }
+  addLog('提交分析: '+JSON.stringify(payload))
+  try{
+    const res = await fetch(api.analyze,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    const data = await res.json()
+    lastThreadId = data.thread_id || null
+    addLog('分析任务已创建: '+(lastThreadId||'—'))
+    if(v('autorefresh').value==='on'){startMarketAuto(payload)}
+    fillAll(data.initial || {})
+  }catch(e){
+    addLog('分析提交失败')
+  }
+}
+function startMarketAuto({symbol,timeframe}){
+  async function tick(){
+    try{
+      const url = api.market + '?symbol='+encodeURIComponent(symbol)+'&timeframe='+encodeURIComponent(timeframe)
+      const res = await fetch(url)
+      const d = await res.json()
+      setText('price', d.close ?? '—')
+      setText('lastUpdate', d.timestamp ?? '—')
+      setText('volume', d.volume ?? '—')
+      setText('oi', d.oi ?? '—')
+    }catch(e){}
+  }
+  tick()
+  marketTimer = setInterval(tick, 5000)
+  addLog('自动刷新行情已开启(5s)')
+}
+async function openNews(){
+  try{
+    const url = api.news + '?symbol='+encodeURIComponent(v('symbol').value.trim())
+    const res = await fetch(url)
+    const d = await res.json()
+    setText('newsScore', d.score ?? '—')
+    setText('newsBias', biasText(d.score ?? '—'))
+    const tbody = v('newsList')
+    tbody.innerHTML = (d.items||[]).slice(0,10).map(x=>(
+      '<tr><td>'+ (x.time||'—') +'</td><td>'+ (x.source||'—') +'</td><td>'+ (x.title||'—') +'</td></tr>'
+    )).join('') || '<tr><td>—</td><td>—</td><td>—</td></tr>'
+    addLog('新闻已更新')
+  }catch(e){}
+}
+async function openIndicators(){
+  try{
+    const url = api.indicators + '?symbol='+encodeURIComponent(v('symbol').value.trim())+'&timeframe='+encodeURIComponent(v('timeframe').value)
+    const res = await fetch(url)
+    const d = await res.json()
+    const rows = [
+      {k:'MA5', val:d.ma5, sig:(d.ma5_signal||'—')},
+      {k:'MA10', val:d.ma10, sig:(d.ma10_signal||'—')},
+      {k:'RSI', val:d.rsi, sig:(d.rsi_signal||'—')},
+      {k:'MACD', val:(d.macd?(d.macd.diff+'/'+d.macd.dea+'/'+d.macd.bar):'—'), sig:(d.macd_signal||'—')}
+    ]
+    v('indicators').innerHTML = rows.map(r=>("<tr><td>"+r.k+"</td><td>"+ (r.val??'—') +"</td><td>"+r.sig+"</td></tr>")).join('')
+    addLog('技术指标已更新')
+  }catch(e){}
+}
+function startStream(){
+  if(!lastThreadId){addLog('尚无任务可流式');return}
+  if(streamRef){streamRef.close()}
+  const src = api.stream(lastThreadId)
+  streamRef = new EventSource(src)
+  streamRef.onmessage = (ev)=>{
+    try{
+      const msg = JSON.parse(ev.data)
+      fillAll(msg)
+    }catch(e){}
+  }
+  streamRef.onerror = ()=>{}
+  addLog('流式分析已开启')
+}
+function fillAll(d){
+  if(d.market){
+    setText('price', d.market.close ?? '—')
+    setText('lastUpdate', d.market.timestamp ?? '—')
+    setText('volume', d.market.volume ?? '—')
+    setText('oi', d.market.oi ?? '—')
+  }
+  if(d.news){
+    setText('newsScore', d.news.score ?? '—')
+    setText('newsBias', biasText(d.news.score ?? '—'))
+    if(d.news.items){
+      v('newsList').innerHTML = d.news.items.slice(0,10).map(x=>(
+        '<tr><td>'+ (x.time||'—') +'</td><td>'+ (x.source||'—') +'</td><td>'+ (x.title||'—') +'</td></tr>'
+      )).join('')
+    }
+  }
+  if(d.indicators){
+    const rows = [
+      {k:'MA5', val:d.indicators.ma5, sig:(d.indicators.ma5_signal||'—')},
+      {k:'MA10', val:d.indicators.ma10, sig:(d.indicators.ma10_signal||'—')},
+      {k:'RSI', val:d.indicators.rsi, sig:(d.indicators.rsi_signal||'—')},
+      {k:'MACD', val:(d.indicators.macd?(d.indicators.macd.diff+'/'+d.indicators.macd.dea+'/'+d.indicators.macd.bar):'—'), sig:(d.indicators.macd_signal||'—')}
+    ]
+    v('indicators').innerHTML = rows.map(r=>("<tr><td>"+r.k+"</td><td>"+ (r.val??'—') +"</td><td>"+r.sig+"</td></tr>")).join('')
+  }
+  if(d.pred){
+    const rows = [1,2,3].map(i=>{
+      const p = d.pred[i]||{}
+      return '<tr><td>'+i+'</td><td>'+ (p.up??'—') +'</td><td>'+ (p.down??'—') +'</td></tr>'
+    }).join(''
+    )
+    v('predTable').innerHTML = rows
+  }
+  if(d.decision){
+    updateSignal(d.decision.fusion_score ?? 0)
+    setText('position', d.decision.position ?? '—')
+    setText('stops', d.decision.stops ?? '—')
+    setText('fusion', (d.decision.fusion_score!=null?d.decision.fusion_score:'—'))
+    setText('fee', d.decision.fee ?? '—')
+  }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  v('btn-run').addEventListener('click', runAnalysis)
+  v('btn-news').addEventListener('click', openNews)
+  v('btn-ind').addEventListener('click', openIndicators)
+  v('btn-stream').addEventListener('click', startStream)
+  v('btn-stop').addEventListener('click', stopAll)
+})
+</script>
+</body>·
+</html>
